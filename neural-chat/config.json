@@ -1,5 +1,5 @@
 {
-  "webhook_url": "/bruh",
+  "webhook_url": "http://127.0.0.1:5801/bruh",
   "ai_name": "Schwortz",
   "character_image": "/home/k/.config/neural-chat/him.png",
   "window_w": 1000,

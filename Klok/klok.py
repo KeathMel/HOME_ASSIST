@@ -30,7 +30,23 @@ from PyQt6.QtGui import QPixmap, QColor, QPainter, QFont, QPen, QBrush, QLinearG
 # ── paths ─────────────────────────────────────────────────────────────────────
 
 ASSETS     = os.path.expanduser("~/.config/MASTER_VAULT/HOME_ASSIST/Klok")
-DATA_FILE  = os.path.join(ASSETS, "klok.json")
+DATA_FILE  = os.path.join(ASSETS, "klok.json")      # old combined file
+DAY_NAMES = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"]   # weekday() order
+
+def _days_to_names(days):
+    """Accept the old 0-6 numbers as well as names, always return names."""
+    out = []
+    for d in (days or []):
+        if isinstance(d, int) and 0 <= d < 7:
+            out.append(DAY_NAMES[d])
+        elif isinstance(d, str):
+            d = d.strip().title()[:2]
+            if d in DAY_NAMES:
+                out.append(d)
+    return out or list(DAY_NAMES)
+
+ALARMS_FILE    = os.path.join(ASSETS, "alarms.json")
+REMINDERS_FILE = os.path.join(ASSETS, "reminders.json")
 TIMER_FILE = os.path.join(ASSETS, "timer.json")
 SOUNDS_DIR = os.path.join(ASSETS, "sounds")
 
@@ -41,15 +57,74 @@ def bg_for_hour(h):
 
 # ── data ──────────────────────────────────────────────────────────────────────
 
+def _read_list(path):
+    if not os.path.exists(path): return []
+    with open(path) as f:
+        try: data = json.load(f)
+        except: return []
+    # File Edit's json append wraps things in [ ... ]; unwrap either shape
+    if isinstance(data, dict):
+        data = [data]
+    out = []
+    for e in (data if isinstance(data, list) else []):
+        if isinstance(e, dict):
+            # an appended {"alarms": [...]} blob, or a bare entry
+            if "alarms" in e or "reminders" in e:
+                for k in ("alarms", "reminders"):
+                    if isinstance(e.get(k), list): out.extend(e[k])
+            else:
+                out.append(e)
+    return out
+
+
+def _tidy(entry, kind):
+    """Fill in whatever the AI left out, so the shape it has to write is
+    just {"type": "alarm", "hour": 8, "minute": 0}. days is optional -- no
+    days means every day, which is what the UI offers anyway."""
+    import time as _t
+    entry.setdefault("type", kind[:-1])
+    entry.setdefault("label", "")
+    entry.setdefault("active", True)
+    entry.setdefault("id", int(_t.time() * 1000))
+    if kind == "alarms":
+        entry.setdefault("hour", 0)
+        entry.setdefault("minute", 0)
+        entry["days"] = _days_to_names(entry.get("days"))
+    return entry
+
+
 def load_data():
-    if not os.path.exists(DATA_FILE): return {"alarms":[], "reminders":[]}
-    with open(DATA_FILE) as f:
-        try: return json.load(f)
-        except: return {"alarms":[], "reminders":[]}
+    alarms    = _read_list(ALARMS_FILE)
+    reminders = _read_list(REMINDERS_FILE)
+
+    # one-time move over from the old combined klok.json
+    if not alarms and not reminders and os.path.exists(DATA_FILE):
+        old = _read_list(DATA_FILE)
+        for e in old:
+            (reminders if e.get("type") == "reminder" else alarms).append(e)
+        if alarms or reminders:
+            save_data({"alarms": alarms, "reminders": reminders})
+
+    return {"alarms":    [_tidy(a, "alarms")    for a in alarms],
+            "reminders": [_tidy(r, "reminders") for r in reminders]}
+
 
 def save_data(data):
     os.makedirs(ASSETS, exist_ok=True)
-    with open(DATA_FILE, "w") as f: json.dump(data, f, indent=2)
+    with open(ALARMS_FILE, "w") as f:
+        f.write(_pretty(data.get("alarms", [])))
+    with open(REMINDERS_FILE, "w") as f:
+        f.write(_pretty(data.get("reminders", [])))
+
+
+def _pretty(data) -> str:
+    """Indented JSON, but short number lists stay on ONE line."""
+    import re
+    text = json.dumps(data, indent=2)
+    return re.sub(r"\[\s+((?:-?\d+,\s+)*-?\d+)\s+\]",
+                  lambda m: "[" + ", ".join(m.group(1).split()).replace(",,", ",") + "]",
+                  text)
+
 
 def load_timer():
     if not os.path.exists(TIMER_FILE): return {}
@@ -57,14 +132,16 @@ def load_timer():
         with open(TIMER_FILE) as f: return json.load(f) or {}
     except Exception: return {}
 
-def save_timer(d):
+def save_timer(seconds):
+    """Save timer state as just a number (seconds remaining), or None to stop."""
     os.makedirs(ASSETS, exist_ok=True)
     tmp = TIMER_FILE + ".tmp"
-    with open(tmp, "w") as f: json.dump(d, f, indent=2)
+    with open(tmp, "w") as f:
+        json.dump(seconds if seconds and seconds > 0 else None, f)
     os.replace(tmp, TIMER_FILE)
 
 def clear_timer():
-    save_timer({})
+    save_timer(None)
 
 # ── sound ─────────────────────────────────────────────────────────────────────
 
@@ -227,7 +304,9 @@ class AddAlarmDialog(QDialog):
         super().__init__(parent)
         self.mode = mode
         self.setWindowTitle(f"Add {mode}")
-        self.setMinimumWidth(300)
+        # Alarm mode has a row of 7 day checkboxes (Mo/Tu/We/Th/Fr/Sa/Su) --
+        # give it more room so the day labels aren't squeezed unreadable
+        self.setMinimumWidth(440 if mode == "Alarm" else 300)
         self.setStyleSheet(DLG_STYLE)
         self._build()
 
@@ -262,6 +341,7 @@ class AddAlarmDialog(QDialog):
                 days = ["Mo","Tu","We","Th","Fr","Sa","Su"]
                 self._day_checks = []
                 day_row = QHBoxLayout()
+                day_row.setSpacing(10)
                 for d in days:
                     cb = QCheckBox(d); cb.setChecked(True)
                     self._day_checks.append(cb); day_row.addWidget(cb)
@@ -280,7 +360,7 @@ class AddAlarmDialog(QDialog):
             return {"type":"timer","duration":secs,"remaining":secs,
                     "label":self._label.text().strip(),"active":False,"id":int(time.time()*1000)}
         elif self.mode == "Alarm":
-            days = [i for i,cb in enumerate(self._day_checks) if cb.isChecked()]
+            days = [DAY_NAMES[i] for i,cb in enumerate(self._day_checks) if cb.isChecked()]
             h = self._hour.value() % 12
             if self._ampm.currentText() == "PM": h += 12
             return {"type":"alarm","hour":h,"minute":self._min.value(),
@@ -358,7 +438,7 @@ class KlokWindow(QMainWindow):
         self.resize(618, 212)
         self.setStyleSheet(STYLE)
 
-        self._tab      = "Alarm"
+        self._tab      = "Clock"
         self._drag_pos = None
         self._data     = load_data()
         self._timer_countdown = {}  # id -> remaining secs
@@ -400,7 +480,7 @@ class KlokWindow(QMainWindow):
         btn_gap = 8
         self._tabs = {}
         self._add_btn = None
-        for i, name in enumerate(("Alarm","Timer","Reminders")):
+        for i, name in enumerate(("Clock","Timer","Alarm")):
             btn = QPushButton(name, overlay)
             btn.setObjectName("tab")
             btn.setProperty("active", name == self._tab)
@@ -451,44 +531,48 @@ class KlokWindow(QMainWindow):
             if style: l.setStyleSheet(style)
             return l
 
-        def _abtn(text, px, py, cb):
+        def _abtn(text, px, py, cb, pw=40, ph=26):
             b = QPushButton(text, overlay)
-            b.setObjectName("arw")
-            b.setGeometry(px, py, 20, 14)
+            b.setObjectName("arw"); b.setStyleSheet("font-size:17px;")
+            b.setGeometry(px, py, pw, ph)
             b.clicked.connect(cb)
             return b
 
         dig_style = ("color:rgba(15,40,80,0.9);font-family:monospace;"
-                     "font-size:20px;font-weight:bold;")
+                     "font-size:34px;font-weight:bold;")
+
+        # The picker sits just right of the Clock/Timer/Alarm tabs now, at a
+        # size you can actually hit, and the list gets the whole right half.
+        px0 = 196
 
         # Hour
-        _abtn("▲", panel_x+2,  33,  lambda: self._bump_alarm("h",  1))
-        self._ah_lbl = _lbl("00", panel_x+2, 47, 24, 22, dig_style)
-        _abtn("▼", panel_x+2,  69, lambda: self._bump_alarm("h", -1))
+        _abtn("▲", px0-4,   26, lambda: self._bump_alarm("h",  1))
+        self._ah_lbl = _lbl("00", px0 - 4, 52, 40, 38, dig_style)
+        _abtn("▼", px0-4,   94, lambda: self._bump_alarm("h", -1))
 
-        _lbl(":", panel_x+26, 47, 10, 22, dig_style)
+        _lbl(":", px0+36, 52, 12, 38, dig_style)
 
         # Minute
-        _abtn("▲", panel_x+36, 33,  lambda: self._bump_alarm("m",  1))
-        self._am_lbl = _lbl("00", panel_x+36, 47, 24, 22, dig_style)
-        _abtn("▼", panel_x+36, 69, lambda: self._bump_alarm("m", -1))
+        _abtn("▲", px0+46,  26, lambda: self._bump_alarm("m",  1))
+        self._am_lbl = _lbl("00", px0+46, 52, 40, 38, dig_style)
+        _abtn("▼", px0+46,  94, lambda: self._bump_alarm("m", -1))
 
         # AM / PM
         self._am_btn = QPushButton("AM", overlay)
         self._am_btn.setObjectName("ampm")
-        self._am_btn.setGeometry(panel_x+62, 37, 26, 16)
+        self._am_btn.setGeometry(px0+94, 52, 38, 22)
         self._am_btn.clicked.connect(lambda: self._set_ampm("AM"))
 
         self._pm_btn = QPushButton("PM", overlay)
         self._pm_btn.setObjectName("ampm")
-        self._pm_btn.setGeometry(panel_x+62, 55, 26, 16)
+        self._pm_btn.setGeometry(px0+94, 76, 38, 22)
         self._pm_btn.clicked.connect(lambda: self._set_ampm("PM"))
         self._update_ampm_display()
 
         # Add alarm button
         add_al = QPushButton("+ alarm", overlay)
         add_al.setObjectName("add")
-        add_al.setGeometry(panel_x+2, 90, 86, 18)
+        add_al.setGeometry(px0, 124, 132, 26)
         add_al.clicked.connect(self._add_alarm_quick)
 
         # Alarm list scroll
@@ -499,7 +583,8 @@ class KlokWindow(QMainWindow):
         self._list_l.addStretch()
 
         list_scroll = QScrollArea(overlay)
-        list_scroll.setGeometry(390, 112, 120, 36)
+        self._list_scroll = list_scroll
+        list_scroll.setGeometry(350, 26, 250, 168)
         list_scroll.setWidgetResizable(True)
         list_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         list_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
@@ -637,6 +722,12 @@ class KlokWindow(QMainWindow):
             if isinstance(child, QWidget) and child not in excluded
         ]
 
+        # apply visibility for the starting tab now -- without this, every
+        # widget just sits at its default "visible" state and the Alarm
+        # time-picker/arrows end up layered on top of the Clock tab until
+        # the user clicks a tab once
+        self._update_panel()
+
     def _refresh_reminders(self):
         while self._rlist_l.count() > 1:
             it = self._rlist_l.takeAt(0)
@@ -696,23 +787,25 @@ class KlokWindow(QMainWindow):
 
     def _update_panel(self):
         """Show/hide alarm panel vs timer panel vs reminders panel."""
-        is_alarm = self._tab == "Alarm"
+        is_clock = self._tab == "Clock"
         is_timer = self._tab == "Timer"
-        is_remind = self._tab == "Reminders"
-        # clock + divider only on Alarm tab
-        self._clock_area.setVisible(is_alarm)
-        self._divider.setVisible(is_alarm)
-        # alarm panel widgets (alarm tab only)
+        is_alarm = self._tab == "Alarm"
+        # the big clock face belongs to the Clock tab now
+        self._clock_area.setVisible(is_clock)
+        self._divider.setVisible(is_clock)
+        # the time picker belongs to the Alarm tab ONLY -- it used to be
+        # drawn on the Clock tab too, right on top of the clock face
         for w in self._alarm_widgets:
             w.setVisible(is_alarm)
-        # timer panel
+        # the list shows on both: read-only on Clock, editable on Alarm
+        self._list_scroll.setVisible(is_clock or is_alarm)
+        # on Clock it sits beside the clock face; on Alarm it owns the right
+        self._list_scroll.setGeometry(*( (396, 26, 210, 168) if is_clock
+                                         else (350, 26, 250, 168) ))
         self._timer_panel.setVisible(is_timer)
-        # reminders panel
-        self._remind_panel.setVisible(is_remind)
-        if is_alarm:
+        self._remind_panel.setVisible(False)      # reminders are gone
+        if is_clock or is_alarm:
             self._refresh_list()
-        elif is_remind:
-            self._refresh_reminders()
 
     # ── list ──────────────────────────────────────────────────────────────────
 
@@ -721,16 +814,24 @@ class KlokWindow(QMainWindow):
             item = self._list_l.takeAt(0)
             if item.widget(): item.widget().deleteLater()
 
-        key = "reminders" if self._tab == "Reminders" else "alarms"
-        type_filter = {"Alarm":"alarm","Timer":"timer","Reminders":"reminder"}[self._tab]
-        items = [x for x in self._data.get(key, [])
-                 if x.get("type","alarm") == type_filter]
+        alarms = [x for x in self._data.get("alarms", [])
+                  if x.get("type", "alarm") == "alarm"]
+
+        if self._tab == "Clock":
+            # read-only: what is actually set to go off, plus a running timer
+            items = [a for a in alarms if a.get("active", True)]
+            items += [t for t in self._data.get("alarms", [])
+                      if t.get("type") == "timer" and t.get("active")]
+            read_only = True
+        else:
+            items = alarms
+            read_only = False
 
         for i, item in enumerate(items):
-            row = self._make_row(item)
+            row = self._make_row(item, read_only=read_only)
             self._list_l.insertWidget(i, row)
 
-    def _make_row(self, item):
+    def _make_row(self, item, read_only=False):
         w = QWidget(); w.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         rl = QHBoxLayout(w); rl.setContentsMargins(1,1,1,1); rl.setSpacing(2)
 
@@ -752,7 +853,30 @@ class KlokWindow(QMainWindow):
             txt = f"{h12:02d}:{item['minute']:02d} {ampm}"
 
         lbl = QLabel(txt); lbl.setObjectName(lbl_cls)
-        rl.addWidget(lbl, 1)
+        rl.addWidget(lbl)
+
+        # alarm/reminder label goes between the time and the on/off + delete
+        # controls -- elided (and capped short) so a long label can't push
+        # the toggle/delete buttons away from it
+        if item["type"] in ("alarm", "reminder") and item.get("label"):
+            rl.addSpacing(4)
+            name_lbl = QLabel(); name_lbl.setObjectName(lbl_cls)
+            name_lbl.setToolTip(item["label"])
+            name_lbl.setMaximumWidth(48)
+            fm = name_lbl.fontMetrics()
+            name_lbl.setText(fm.elidedText(item["label"], Qt.TextElideMode.ElideRight, 48))
+            rl.addWidget(name_lbl)
+
+        # The Clock tab is a read-out, not a control panel -- no toggling,
+        # no deleting from there. You do that on the Alarm and Timer tabs.
+        if read_only:
+            rl.addStretch(1)
+            return w
+
+        # small fixed gap, then the controls -- the stretch goes AFTER the
+        # buttons (not before) so they sit right next to the label instead
+        # of getting pushed all the way to the far edge of the row
+        rl.addSpacing(6)
 
         # toggle (alarm/timer)
         if item["type"] != "reminder":
@@ -773,6 +897,8 @@ class KlokWindow(QMainWindow):
         dl = QPushButton("✕"); dl.setObjectName("del"); dl.setFixedSize(18,18)
         dl.clicked.connect(lambda c,it=item: self._delete(it))
         rl.addWidget(dl)
+
+        rl.addStretch(1)
         return w
 
     # ── actions ───────────────────────────────────────────────────────────────
@@ -836,15 +962,15 @@ class KlokWindow(QMainWindow):
             "background:transparent;border:none;")
 
     def _add_alarm_quick(self):
-        h = self._alarm_h if self._alarm_h != 0 else 12
-        if self._alarm_ampm == "PM" and h != 12: h += 12
-        if self._alarm_ampm == "AM" and h == 12: h = 0
-        item = {"type":"alarm","hour":h,"minute":self._alarm_m,
-                "label":"","days":[0,1,2,3,4,5,6],"active":True,
-                "id":int(time.time()*1000)}
-        self._data.setdefault("alarms",[]).append(item)
-        save_data(self._data)
-        self._refresh_list()
+        # opens the proper dialog -- hour, minute, AM/PM, which days, label --
+        # instead of silently adding an every-day alarm you then can't edit
+        dlg = AddAlarmDialog("Alarm", self)
+        if dlg.exec():
+            item = dlg.result_data()
+            if item:
+                self._data.setdefault("alarms",[]).append(item)
+                save_data(self._data)
+                self._refresh_list()
 
     def _bump_timer(self, field, delta):
         if self._timer_running: return
@@ -891,11 +1017,7 @@ class KlokWindow(QMainWindow):
             self._timer_running = True
             self._tstart_btn.setText("pause")
             # mirror to timer.json so external readers (AI / bridge) see state
-            try:
-                from datetime import datetime as _dt, timedelta as _td
-                end = _dt.now() + _td(seconds=self._timer_remaining)
-                save_timer({"running": True, "end_at": end.isoformat(timespec="seconds")})
-            except Exception: pass
+            save_timer(self._timer_remaining)
 
     def _timer_tick(self):
         if not self._timer_running: return
@@ -945,7 +1067,7 @@ class KlokWindow(QMainWindow):
         for item in self._data.get("alarms",[]):
             if not item.get("active"): continue
             if item["type"] == "alarm":
-                if now.weekday() in item.get("days",[0,1,2,3,4,5,6]):
+                if DAY_NAMES[now.weekday()] in _days_to_names(item.get("days")):
                     if now.hour==item["hour"] and now.minute==item["minute"] and now.second==0:
                         play_alarm()
             elif item["type"] == "timer":
@@ -1042,35 +1164,19 @@ class KlokWindow(QMainWindow):
 
     def _reload_timer(self):
         """Apply timer.json to the running timer state.
-        Shape: {"running":true,"end_at":"ISO8601","label":"optional"}
-               or {} / missing keys to cancel."""
+        Shape: just a number (seconds remaining) or null/None to cancel."""
         t = load_timer()
-        if not t or not t.get("running"):
-            # external cancel
+        if not t or not isinstance(t, (int, float)) or t <= 0:
+            # external cancel or no valid timer
             if self._timer_running:
                 self._timer_running = False
                 self._timer_remaining = 0
                 self._tstart_btn.setText("start")
                 self._update_timer_display(red=False)
             return
-        end_at = t.get("end_at")
-        if not end_at: return
-        try:
-            from datetime import datetime as _dt
-            end_dt = _dt.fromisoformat(end_at)
-            rem = int((end_dt - _dt.now()).total_seconds())
-        except Exception:
-            return
-        if rem <= 0:
-            # already expired by the time we read it
-            self._timer_running = False
-            self._timer_remaining = 0
-            self._update_timer_display(red=True)
-            self._ring_timer()
-            clear_timer()
-            return
+        rem = int(t)
         self._timer_remaining = rem
-        # split back into H/M/S for the display
+        # split into H/M/S for the display
         self._timer_h = rem // 3600
         self._timer_m = (rem % 3600) // 60
         self._timer_s = rem % 60

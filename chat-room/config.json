@@ -1,11 +1,1 @@
-{
-  "webhooks": {
-    "Schwortz": "http://127.0.0.1:5800/hook/bruh",
-    "Eira": "",
-    "Lyren": ""
-  },
-  "window_w": 367,
-  "window_h": 394,
-  "dim_day": 30,
-  "dim_night": 80
-}
+{}

@@ -18,6 +18,58 @@ from PyQt6.QtGui import QPixmap, QColor, QPainter, QFont, QPen, QBrush, QLinearG
 
 ASSETS     = os.path.expanduser("~/.config/MASTER_VAULT/HOME_ASSIST/todo")
 TASKS_FILE = os.path.join(ASSETS, "tasks.json")
+# done and deleted tasks live here instead, so tasks.json only ever holds
+# what's still active. Both are read back on load, so nothing disappears
+# from the app -- it's purely a split on disk.
+ARCHIVE_FILE = os.path.join(ASSETS, "archive.json")
+
+# ── sounds ────────────────────────────────────────────────────────────────────
+#
+# These were hardcoded to /home/k/.config/todo/sounds/ — the location from
+# before the move into MASTER_VAULT. Four of the five calls were wrapped in
+# `if os.path.exists(...)`, so they silently did nothing and the fifth spawned
+# mpv on a file that was not there. The path is now derived from ASSETS, with
+# the old location kept as a fallback in case the files are still there.
+
+SOUND_DIRS = [
+    os.path.join(ASSETS, "sounds"),
+    os.path.expanduser("~/.config/todo/sounds"),      # where they used to live
+]
+
+# what each event sounds like, in one place
+SND_DONE    = "Task_done.mp3"
+SND_DELETE  = "windows-10-hardware-remove-disconnect.mp3"
+SND_RESTORE = "respawn-anchor-1.mp3"
+SND_STEP    = "universfield-level-passed-142971.mp3"
+SND_SCROLL  = "makigai_maimai-paper-245786.mp3"
+
+_sound_cache = {}
+
+def sound_path(name):
+    """Find a sound once, remember the answer (or remember that it is absent)."""
+    if name in _sound_cache:
+        return _sound_cache[name]
+    for d in SOUND_DIRS:
+        p = os.path.join(d, name)
+        if os.path.exists(p):
+            _sound_cache[name] = p
+            return p
+    _sound_cache[name] = None
+    print(f"todo: sound not found: {name} (looked in {', '.join(SOUND_DIRS)})",
+          file=sys.stderr)
+    return None
+
+def play(name, volume=70):
+    """Fire and forget. Never let a missing file or missing mpv break a click."""
+    p = sound_path(name)
+    if not p:
+        return
+    try:
+        subprocess.Popen(["mpv", "--no-video", f"--volume={volume}", p],
+                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except (FileNotFoundError, OSError) as e:
+        print(f"todo: could not play {name}: {e}", file=sys.stderr)
+
 
 def bg_for_hour(h):
     if 6 <= h < 19:
@@ -37,15 +89,25 @@ def cat_color(cat):
 
 # ── tasks ─────────────────────────────────────────────────────────────────────
 
-def load_tasks():
-    if not os.path.exists(TASKS_FILE): return []
-    with open(TASKS_FILE) as f:
-        try: return json.load(f)
+def _read(path):
+    if not os.path.exists(path): return []
+    with open(path) as f:
+        try:
+            data = json.load(f)
+            return data if isinstance(data, list) else []
         except: return []
+
+def load_tasks():
+    # active tasks plus the archive, so the app still sees the full list
+    return _read(TASKS_FILE) + _read(ARCHIVE_FILE)
 
 def save_tasks(tasks):
     os.makedirs(ASSETS, exist_ok=True)
-    with open(TASKS_FILE,"w") as f: json.dump(tasks, f, indent=2)
+    active, archived = [], []
+    for t in tasks:
+        (archived if t.get("status") in ("done", "deleted") else active).append(t)
+    with open(TASKS_FILE,"w") as f: json.dump(active, f, indent=2)
+    with open(ARCHIVE_FILE,"w") as f: json.dump(archived, f, indent=2)
 
 def update_task(tid, **kwargs):
     tasks = load_tasks()
@@ -287,24 +349,15 @@ class TaskRow(QWidget):
         self._arrow.setText("▴" if self._expanded else "▾")
 
     def _trash_task(self):
-        sound = "/home/k/.config/todo/sounds/windows-10-hardware-remove-disconnect.mp3"
-        if os.path.exists(sound):
-            subprocess.Popen(["mpv","--no-video","--volume=70", sound],
-                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        play(SND_DELETE)
         self._on_delete(self._task)
 
     def _quick_done(self):
-        sound = "/home/k/.config/todo/sounds/Task_done.mp3"
-        if os.path.exists(sound):
-            subprocess.Popen(["mpv","--no-video","--volume=70", sound],
-                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        play(SND_DONE)
         self._on_done(self._task)
 
     def _quick_restore(self):
-        sound = "/home/k/.config/todo/sounds/respawn-anchor-1.mp3"
-        if os.path.exists(sound):
-            subprocess.Popen(["mpv","--no-video","--volume=70", sound],
-                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        play(SND_RESTORE)
         self._on_restore(self._task)
 
     def _rebuild_steps(self):
@@ -344,10 +397,7 @@ class TaskRow(QWidget):
         s["done"] = not s.get("done", False)
         steps[idx] = s
         update_task(self._task["id"], steps=steps)
-        sound = "/home/k/.config/todo/sounds/universfield-level-passed-142971.mp3"
-        if os.path.exists(sound):
-            subprocess.Popen(["mpv","--no-video","--volume=70", sound],
-                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        play(SND_STEP)
         self._rebuild_steps()
 
     def _show_step_inp(self):
@@ -553,9 +603,7 @@ class TodoWindow(QMainWindow):
         from PyQt6.QtCore import QEvent
         if obj is self._scroll and event.type() == QEvent.Type.Wheel:
             if self._scroll_sound_timer is None or not self._scroll_sound_timer.isActive():
-                sound = "/home/k/.config/todo/sounds/makigai_maimai-paper-245786.mp3"
-                subprocess.Popen(["mpv","--no-video","--volume=50", sound],
-                                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                play(SND_SCROLL, volume=50)
                 self._scroll_sound_timer = QTimer()
                 self._scroll_sound_timer.setSingleShot(True)
                 self._scroll_sound_timer.start(600)

@@ -1,0 +1,679 @@
+[
+  {
+    "command": "save",
+    "category": "Important",
+    "title": "FIX MEMORY MANAGE NODE",
+    "notes": "",
+    "status": "done",
+    "id": 4289173056284
+  },
+  {
+    "command": "save",
+    "category": "Today",
+    "title": "Fix Clock UI",
+    "notes": "",
+    "status": "done",
+    "id": 15,
+    "steps": []
+  },
+  {
+    "command": "save",
+    "category": "Today",
+    "title": "Check laundry",
+    "notes": "",
+    "status": "deleted",
+    "id": 12,
+    "steps": [
+      {
+        "text": "Wait for tokens to refill",
+        "done": true
+      },
+      {
+        "text": "Fix the clock bug",
+        "done": true
+      }
+    ]
+  },
+  {
+    "command": "save",
+    "category": "Coming up",
+    "title": "Buy Vodka",
+    "notes": "",
+    "status": "deleted",
+    "id": 13,
+    "steps": [
+      {
+        "text": "Wait for tokens to refill",
+        "done": true
+      },
+      {
+        "text": "Fix the clock bug",
+        "done": true
+      }
+    ]
+  },
+  {
+    "command": "save",
+    "category": "Today",
+    "title": "FIX CLOCK",
+    "notes": "",
+    "status": "done",
+    "id": 14,
+    "steps": [
+      {
+        "text": "Wait for tokens to refill",
+        "done": true
+      },
+      {
+        "text": "Fix the clock bug",
+        "done": true
+      }
+    ]
+  },
+  {
+    "command": "save",
+    "category": "Important",
+    "title": "modular schwortz",
+    "notes": "",
+    "status": "done",
+    "id": 1789916383193,
+    "steps": [
+      {
+        "text": "Add power of comands",
+        "done": true
+      }
+    ]
+  },
+  {
+    "command": "save",
+    "category": "Coming up",
+    "title": "Dugs",
+    "notes": "",
+    "status": "done",
+    "id": 1790194437768,
+    "steps": [
+      {
+        "text": "add time streaming",
+        "done": true
+      },
+      {
+        "text": "Calendar",
+        "done": true
+      },
+      {
+        "text": "todo",
+        "done": true
+      }
+    ]
+  },
+  {
+    "command": "save",
+    "category": "Coming up",
+    "title": "Cklock",
+    "notes": "",
+    "status": "done",
+    "id": 1790194470698,
+    "steps": [
+      {
+        "text": "timer make it simpler",
+        "done": false
+      }
+    ]
+  },
+  {
+    "command": "save",
+    "category": "Today",
+    "title": "fd",
+    "notes": "",
+    "status": "deleted",
+    "id": 1790191903546
+  },
+  {
+    "command": "save",
+    "category": "Important",
+    "title": "s",
+    "notes": "",
+    "status": "deleted",
+    "id": 1790190955053
+  },
+  {
+    "command": "save",
+    "category": "Important",
+    "title": "d",
+    "notes": "",
+    "status": "deleted",
+    "id": 1780452184091,
+    "steps": [
+      {
+        "text": "dwad",
+        "done": true
+      }
+    ]
+  },
+  {
+    "command": "save",
+    "category": "Today",
+    "title": "dw",
+    "notes": "dwa",
+    "status": "deleted",
+    "id": 1780452332735
+  },
+  {
+    "command": "save",
+    "category": "Important",
+    "title": "dwawd",
+    "notes": "",
+    "status": "deleted",
+    "id": 1780456585650
+  },
+  {
+    "command": "save",
+    "category": "Important",
+    "title": "wda",
+    "notes": "",
+    "status": "done",
+    "id": 1780460777286
+  },
+  {
+    "command": "save",
+    "category": "Important",
+    "title": "daw",
+    "notes": "",
+    "status": "deleted",
+    "id": 1780460781172,
+    "steps": [
+      {
+        "text": "wds",
+        "done": false
+      },
+      {
+        "text": "dwads",
+        "done": false
+      }
+    ]
+  },
+  {
+    "command": "save",
+    "category": "Important",
+    "title": "dawd",
+    "notes": "",
+    "status": "done",
+    "id": 1780460783319
+  },
+  {
+    "command": "save",
+    "category": "Important",
+    "title": "dawd",
+    "notes": "",
+    "status": "done",
+    "id": 1780460796715
+  },
+  {
+    "command": "save",
+    "category": "Today",
+    "title": "dawd",
+    "notes": "",
+    "status": "done",
+    "id": 1780463021241
+  },
+  {
+    "command": "save",
+    "category": "Today",
+    "title": "Answer questions",
+    "notes": "",
+    "status": "deleted",
+    "id": 1780466661843,
+    "steps": [
+      {
+        "text": "offer",
+        "done": false
+      },
+      {
+        "text": "my stroy",
+        "done": false
+      },
+      {
+        "text": "black list",
+        "done": false
+      }
+    ]
+  },
+  {
+    "command": "save",
+    "category": "Today",
+    "title": "question",
+    "notes": "",
+    "status": "done",
+    "id": 1780466749371,
+    "steps": [
+      {
+        "text": "offer",
+        "done": true
+      },
+      {
+        "text": "mystroy",
+        "done": true
+      },
+      {
+        "text": "Black list",
+        "done": true
+      },
+      {
+        "text": "blackLISt",
+        "done": false
+      }
+    ]
+  },
+  {
+    "command": "save",
+    "category": "Important",
+    "title": "dwdwdawdawdwd wadwdaw",
+    "notes": "",
+    "status": "deleted",
+    "id": 1780467302042
+  },
+  {
+    "command": "save",
+    "category": "Today",
+    "title": "mom pwa",
+    "notes": "",
+    "status": "done",
+    "id": 1780547651896
+  },
+  {
+    "command": "save",
+    "category": "Today",
+    "title": "Klock",
+    "notes": "",
+    "status": "done",
+    "id": 1780547669166
+  },
+  {
+    "command": "save",
+    "category": "Today",
+    "title": "Workaway",
+    "notes": "",
+    "status": "done",
+    "id": 1780652381458,
+    "steps": [
+      {
+        "text": "1",
+        "done": true
+      },
+      {
+        "text": "2",
+        "done": true
+      },
+      {
+        "text": "3",
+        "done": true
+      },
+      {
+        "text": "4",
+        "done": true
+      },
+      {
+        "text": "5",
+        "done": false
+      },
+      {
+        "text": "6",
+        "done": false
+      },
+      {
+        "text": "7",
+        "done": false
+      },
+      {
+        "text": "8",
+        "done": false
+      }
+    ]
+  },
+  {
+    "command": "save",
+    "category": "Today",
+    "title": "rework UI sounds",
+    "notes": "",
+    "status": "done",
+    "id": 1780652438546,
+    "steps": [
+      {
+        "text": "Shwortz",
+        "done": true
+      },
+      {
+        "text": "Todo",
+        "done": false
+      },
+      {
+        "text": "Calendar",
+        "done": false
+      },
+      {
+        "text": "Clock",
+        "done": false
+      },
+      {
+        "text": "Lyren",
+        "done": false
+      },
+      {
+        "text": "room",
+        "done": false
+      }
+    ]
+  },
+  {
+    "command": "save",
+    "category": "Coming up",
+    "title": "Schwortz MEMORY",
+    "notes": "",
+    "status": "done",
+    "id": 1780652480159
+  },
+  {
+    "command": "save",
+    "category": "Goals",
+    "title": "Lyren",
+    "notes": "",
+    "status": "done",
+    "id": 1780652491879
+  },
+  {
+    "command": "save",
+    "category": "Coming up",
+    "title": "connect modules",
+    "notes": "",
+    "status": "done",
+    "id": 1780652504069
+  },
+  {
+    "command": "save",
+    "category": "Today",
+    "title": "bridge test",
+    "notes": "",
+    "status": "done",
+    "id": 1780707063410
+  },
+  {
+    "command": "save",
+    "category": "Today",
+    "title": "bridge test",
+    "notes": "",
+    "status": "deleted",
+    "id": 1780707704198
+  },
+  {
+    "command": "save",
+    "category": "Today",
+    "title": "bridge test",
+    "notes": "",
+    "status": "done",
+    "id": 1780707716978
+  },
+  {
+    "command": "save",
+    "category": "Today",
+    "title": "Packing my bags",
+    "notes": "",
+    "status": "done",
+    "id": 1780844981915
+  },
+  {
+    "command": "save",
+    "category": "Today",
+    "title": "Packing my bags",
+    "notes": "",
+    "status": "deleted",
+    "id": 1780844981919
+  },
+  {
+    "command": "save",
+    "category": "Today",
+    "title": "clean myself up before the flight",
+    "notes": "",
+    "status": "done",
+    "id": 1780878687868
+  },
+  {
+    "command": "save",
+    "category": "Important",
+    "title": "auto tunnel lyren roomchat",
+    "notes": "",
+    "status": "done",
+    "id": 1780879106224
+  },
+  {
+    "command": "save",
+    "category": "Important",
+    "title": "fix module functions",
+    "notes": "",
+    "status": "done",
+    "id": 1780880193598
+  },
+  {
+    "command": "save",
+    "category": "Goals",
+    "title": "make 30k more than I've ever seen",
+    "notes": "a big goal but one I believe in",
+    "status": "deleted",
+    "id": 1780890366404
+  },
+  {
+    "command": "save",
+    "category": "Coming up",
+    "title": "work on lyren",
+    "notes": "",
+    "status": "done",
+    "id": 1781114709811
+  },
+  {
+    "command": "save",
+    "category": "Important",
+    "title": "do the cold caler interview script and general guid line script for them",
+    "notes": "More important task for today",
+    "status": "done",
+    "id": 1781114709813
+  },
+  {
+    "command": "save",
+    "category": "Coming Up",
+    "title": "fix timer",
+    "notes": "",
+    "status": "done",
+    "id": 1781703092432,
+    "steps": [
+      {
+        "text": "all modules must load",
+        "done": false
+      }
+    ]
+  },
+  {
+    "command": "save",
+    "category": "Coming Up",
+    "title": "fix size of todo list",
+    "notes": "",
+    "status": "done",
+    "id": 1781703092456,
+    "steps": [
+      {
+        "text": "ui problem, glitch",
+        "done": false
+      }
+    ]
+  },
+  {
+    "command": "save",
+    "category": "Coming Up",
+    "title": "fix popup and color name",
+    "notes": "",
+    "status": "done",
+    "id": 1781703092461
+  },
+  {
+    "command": "save",
+    "category": "Today",
+    "title": "make the alarm timer module be loading all its modules all the time",
+    "notes": "",
+    "status": "deleted",
+    "id": 1782040149045
+  },
+  {
+    "command": "save",
+    "category": "Important",
+    "title": "fix calendar size",
+    "notes": "",
+    "status": "done",
+    "id": 1782040209306
+  },
+  {
+    "command": "save",
+    "category": "Today",
+    "title": "buggeraids translater",
+    "notes": "make a lis tof items needed and prices",
+    "status": "deleted",
+    "id": 1782289537156
+  },
+  {
+    "command": "save",
+    "category": "Coming up",
+    "title": "Ghostnet",
+    "notes": "figure it out",
+    "status": "deleted",
+    "id": 1782289688195
+  },
+  {
+    "command": "save",
+    "category": "Coming up",
+    "title": "figure out the EMPR handy tool",
+    "notes": "",
+    "status": "deleted",
+    "id": 1782289879574
+  },
+  {
+    "command": "save",
+    "category": "Today",
+    "title": "GAMEEE",
+    "notes": "",
+    "status": "done",
+    "id": 1785943956583
+  },
+  {
+    "command": "save",
+    "category": "Today",
+    "title": "APPLICATIONS",
+    "notes": "",
+    "status": "deleted",
+    "id": 1785943964764,
+    "steps": [
+      {
+        "text": "Do 5",
+        "done": false
+      }
+    ]
+  },
+  {
+    "command": "save",
+    "category": "Today",
+    "title": "hardirve sortingout",
+    "notes": "",
+    "status": "done",
+    "id": 1785943979209
+  },
+  {
+    "command": "save",
+    "category": "Today",
+    "title": "SETUP GUGSS",
+    "notes": "",
+    "status": "done",
+    "id": 1785943987720
+  },
+  {
+    "command": "save",
+    "category": "Today",
+    "title": "send applications",
+    "notes": "",
+    "status": "done",
+    "id": 1785950729815,
+    "steps": [
+      {
+        "text": "1",
+        "done": true
+      },
+      {
+        "text": "2",
+        "done": true
+      },
+      {
+        "text": "3",
+        "done": true
+      },
+      {
+        "text": "4",
+        "done": false
+      },
+      {
+        "text": "6",
+        "done": false
+      },
+      {
+        "text": "7",
+        "done": false
+      },
+      {
+        "text": "8",
+        "done": false
+      },
+      {
+        "text": "9",
+        "done": false
+      },
+      {
+        "text": "5",
+        "done": false
+      }
+    ]
+  },
+  {
+    "command": "save",
+    "category": "Goals",
+    "title": "Ipod",
+    "notes": "",
+    "status": "deleted",
+    "id": 1785952448845
+  },
+  {
+    "command": "save",
+    "category": "Important",
+    "title": "GET JOB",
+    "notes": "",
+    "status": "done",
+    "id": 1788300812396
+  },
+  {
+    "command": "save",
+    "category": "Important",
+    "title": "d",
+    "notes": "",
+    "status": "done",
+    "id": 1789404802282
+  },
+  {
+    "command": "save",
+    "category": "Coming up",
+    "title": "memory node",
+    "notes": "issue is the way it send s it try and see",
+    "status": "done",
+    "id": 1789916357207
+  },
+  {
+    "command": "save",
+    "category": "Important",
+    "title": "Build Schwortz in a  module way",
+    "notes": "",
+    "status": "deleted",
+    "id": 1789916370126
+  }
+]

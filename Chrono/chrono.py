@@ -25,6 +25,10 @@ from PyQt6.QtGui import (
 
 ASSETS      = os.path.expanduser("~/.config/MASTER_VAULT/HOME_ASSIST/Chrono")
 EVENTS_FILE = os.path.join(ASSETS, "events.json")
+# events whose date has passed get moved here, so events.json only holds
+# today and what's still ahead. Both files are read back on load, so nothing
+# vanishes from the calendar -- it's purely a split on disk.
+PAST_EVENTS_FILE = os.path.join(ASSETS, "past_events.json")
 
 def bg_for_hour(h):
     if 6 <= h < 19:
@@ -46,15 +50,39 @@ def cat_color(name: str) -> QColor:
 
 # ── events store ──────────────────────────────────────────────────────────────
 
+def _read_events(path) -> list:
+    if not os.path.exists(path):
+        return []
+    with open(path) as f:
+        try:
+            data = json.load(f)
+            return data if isinstance(data, list) else []
+        except:
+            return []
+
+def _archive_past(events_list) -> list:
+    """Move anything dated before today into past_events.json. Returns the
+    events that are still current."""
+    today = date.today().isoformat()
+    current, past = [], _read_events(PAST_EVENTS_FILE)
+    moved = False
+    for ev in events_list:
+        d = ev.get("date", "")
+        if d and d < today:
+            past.append(ev); moved = True
+        else:
+            current.append(ev)
+    if moved:
+        os.makedirs(ASSETS, exist_ok=True)
+        with open(PAST_EVENTS_FILE, "w") as f:
+            json.dump(past, f, indent=2)
+        with open(EVENTS_FILE, "w") as f:
+            json.dump(current, f, indent=2)
+    return current
+
 def load_events() -> dict:
     """Return dict keyed by 'YYYY-MM-DD' -> list of {appointment, category}"""
-    if not os.path.exists(EVENTS_FILE):
-        return {}
-    with open(EVENTS_FILE) as f:
-        try:
-            raw = json.load(f)
-        except:
-            return {}
+    raw = _archive_past(_read_events(EVENTS_FILE)) + _read_events(PAST_EVENTS_FILE)
     events = {}
     for ev in raw:
         d = ev.get("date","")
@@ -65,11 +93,7 @@ def load_events() -> dict:
 def write_event(cmd: str, category: str, appointment: str, date_str: str):
     """Add or remove an event from the JSON file."""
     os.makedirs(ASSETS, exist_ok=True)
-    events_list = []
-    if os.path.exists(EVENTS_FILE):
-        with open(EVENTS_FILE) as f:
-            try: events_list = json.load(f)
-            except: events_list = []
+    events_list = _read_events(EVENTS_FILE)
 
     if cmd == "create":
         events_list.append({
@@ -79,11 +103,16 @@ def write_event(cmd: str, category: str, appointment: str, date_str: str):
             "date": date_str,
         })
     elif cmd == "delete":
-        events_list = [
-            e for e in events_list
-            if not (e.get("date") == date_str and
-                    e.get("appointment","").lower() == appointment.lower())
-        ]
+        def _keep(e):
+            return not (e.get("date") == date_str and
+                        e.get("appointment","").lower() == appointment.lower())
+        events_list = [e for e in events_list if _keep(e)]
+        # a deleted event may already have been archived, so clear it there too
+        past = _read_events(PAST_EVENTS_FILE)
+        kept_past = [e for e in past if _keep(e)]
+        if len(kept_past) != len(past):
+            with open(PAST_EVENTS_FILE, "w") as f:
+                json.dump(kept_past, f, indent=2)
 
     with open(EVENTS_FILE, "w") as f:
         json.dump(events_list, f, indent=2)

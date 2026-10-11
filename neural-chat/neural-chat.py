@@ -106,6 +106,40 @@ def detect_mic_source():
     except: pass
     return "default"
 
+# ── replies that are files, not text ──────────────────────────────────────────
+# Schwortz can answer with a voice note: the reply body IS a wav, with
+# Content-Type: audio/wav. Calling .decode() on that raises
+#   'utf-8' codec can't decode byte 0xac in position 29
+# so the reply has to be sniffed before anything tries to read it as text.
+
+_TEXTY = ("json", "text/", "xml", "javascript", "yaml", "csv",
+          "x-www-form-urlencoded")
+
+_REPLY_EXT = {
+    "audio/wav": ".wav", "audio/x-wav": ".wav", "audio/wave": ".wav",
+    "audio/mpeg": ".mp3", "audio/ogg": ".ogg", "audio/opus": ".opus",
+    "audio/flac": ".flac", "audio/mp4": ".m4a", "audio/aac": ".aac",
+    "audio/webm": ".webm",
+}
+
+
+def reply_is_text(ctype):
+    c = (ctype or "").lower()
+    if not c:
+        return True          # no Content-Type at all: assume text, as before
+    return any(h in c for h in _TEXTY)
+
+
+def save_reply_file(raw, ctype):
+    """Write a binary reply to a temp file and hand back the path."""
+    base = (ctype or "").split(";")[0].strip().lower()
+    suffix = _REPLY_EXT.get(base, ".bin")
+    tmp = tempfile.NamedTemporaryFile(suffix=suffix, delete=False)
+    tmp.write(raw)
+    tmp.close()
+    return tmp.name
+
+
 # ── worker threads ────────────────────────────────────────────────────────────
 
 class SendThread(QThread):
@@ -127,7 +161,19 @@ class SendThread(QThread):
                 ct   = "application/json"
             req = urllib.request.Request(self.url, data=data,
                                          headers={"Content-Type":ct}, method="POST")
-            with urllib.request.urlopen(req, timeout=30) as r: body=r.read().decode()
+            with urllib.request.urlopen(req, timeout=30) as r:
+                raw   = r.read()
+                rtype = r.headers.get("Content-Type") or ""
+
+            # a reply that isn't text is a FILE already in hand -- save it and
+            # play it, no second request, no URL needed
+            if raw and not reply_is_text(rtype):
+                self.response_ready.emit("audio_file", save_reply_file(raw, rtype))
+                return
+
+            # errors="replace" so a stray byte in a text reply can never take
+            # the whole chat down the way it used to
+            body = raw.decode("utf-8", errors="replace")
             s = body.strip()
             if s.startswith("http") and any(s.endswith(x) for x in [".mp3",".ogg",".wav",".webm",".aac"]):
                 self.response_ready.emit("audio", s)
@@ -743,6 +789,12 @@ class ChatWindow(QMainWindow):
 
     def _on_response(self, rtype, content):
         self._hide_typing(); self._status_lbl.setText("ready")
+        if rtype == "audio_file":
+            # already on disk -- nothing to download
+            self._add_bubble("ai", content, "audio")
+            subprocess.Popen(["mpv", "--no-video", content],
+                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            return
         if rtype == "audio":
             self._add_bubble("ai","[ fetching audio… ]")
             self._audio_thread = AudioDLThread(content)
